@@ -3,13 +3,13 @@ const { signToken, AuthenticationError } = require("../utils/auth");
 
 const resolvers = {
 	Query: {
-		me: async (parent, { username }) => {
-			return User.findOne({ username });
+		me: async (parent, args) => {
+			return await User.findById(args.id);
 		},
 	},
 	Mutation: {
 		loginUser: async (parent, { email, password }) => {
-			const user = await User.findOne({ email });
+			const user = await User.findOne({ email }).populate("savedBooks");
 			if (!user) {
 				throw AuthenticationError;
 			}
@@ -26,15 +26,13 @@ const resolvers = {
 			const token = signToken(user);
 			return { token, user };
 		},
-		saveBook: async (parent, { authors, description, title, bookId, image, link, userId }) => {
-			const book = await Book.create({ authors, description, title, bookId, image, link });
-
-			const user = User.findOneAndUpdate({ _id: userId }, { $addToSet: { savedBooks: book } });
+		saveBook: async (parent, { authors, description, title, bookId, image, link }, context) => {
+			const user = await User.findByIdAndUpdate({ _id: context.user._id }, { $push: { savedBooks: { authors, description, title, bookId, image, link } } }, { new: true });
 
 			return user;
 		},
-		removeBook: async (parent, { bookId }) => {
-			return Book.findOneAndDelete({ _id: bookId });
+		removeBook: async (parent, { bookId }, context) => {
+			return User.findByIdAndUpdate({ _id: context.user._id }, { $pull: { savedBooks: { bookId } } }, { new: true });
 		},
 	},
 };

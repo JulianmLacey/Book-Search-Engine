@@ -9,9 +9,11 @@ const db = require("./config/connection");
 
 const PORT = process.env.PORT || 3001;
 const app = express();
+
 const server = new ApolloServer({
 	typeDefs,
 	resolvers,
+	context: authMiddleware,
 });
 
 // Create a new instance of an Apollo server with the GraphQL schema
@@ -29,10 +31,10 @@ const startApolloServer = async () => {
 	);
 
 	if (process.env.NODE_ENV === "production") {
-		app.use(express.static(path.join(__dirname, "../client/dist")));
+		app.use(express.static(path.join(__dirname, "../client/build")));
 
 		app.get("*", (req, res) => {
-			res.sendFile(path.join(__dirname, "../client/dist/index.html"));
+			res.sendFile(path.join(__dirname, "../client/build/index.html"));
 		});
 	}
 
